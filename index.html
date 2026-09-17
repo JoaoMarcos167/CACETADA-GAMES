@@ -8,6 +8,17 @@
 </head>
 <body>
     <div class="game-container">
+        <!-- Tela de Início -->
+        <div id="start-screen" class="overlay">
+            <h1>SPACE SHOOTER</h1>
+            <p class="subtitle">SELECIONE O NÍVEL</p>
+            <div class="level-buttons">
+                <button class="btn-level" onclick="startGame(1)">NÍVEL 1 (Ondas 1-5)</button>
+                <button class="btn-level" onclick="startGame(3)">NÍVEL 2 (Ondas 3-5)</button>
+                <button class="btn-level btn-boss" onclick="startGame(5)">NÍVEL 3 (BOSS)</button>
+            </div>
+        </div>
+
         <div class="ui-bar">
             <div class="hp-box">
                 <div id="hp-bar"></div>
@@ -18,7 +29,7 @@
             <span>❤️ <span id="lives">3</span></span>
         </div>
         <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <p class="controls">Controles: [WASD / Setas] Mover | [Espaço] ou [Mouse] Atirar</p>
+        <p class="controls">Controles: [WASD / Setas] Mover | [Espaço / Mouse] Atirar</p>
     </div>
     <script src="script.js"></script>
 </body>

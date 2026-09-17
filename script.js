@@ -1,6 +1,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+const startScreen = document.getElementById('start-screen');
 const hpBar = document.getElementById('hp-bar');
 const hpText = document.getElementById('hp-text');
 const waveEl = document.getElementById('wave');
@@ -11,6 +12,7 @@ let score = 0;
 let currentWave = 1;
 let gameOver = false;
 let gameWon = false;
+let gameStarted = false;
 
 // Jogador
 const player = {
@@ -32,7 +34,7 @@ window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 canvas.addEventListener('mousedown', () => mouseShooting = true);
 canvas.addEventListener('mouseup', () => mouseShooting = false);
 
-// Fundo Estrelado Animado
+// Fundo Estrelado
 const stars = Array.from({ length: 60 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
@@ -40,37 +42,48 @@ const stars = Array.from({ length: 60 }, () => ({
     speed: Math.random() * 2 + 1
 }));
 
-// Entidades
 let playerBullets = [];
 let enemyBullets = [];
 let enemies = [];
 let lastShot = 0;
+
+function startGame(selectedLevel) {
+    currentWave = selectedLevel;
+    waveEl.innerText = currentWave;
+    score = 0;
+    scoreEl.innerText = score;
+    player.hp = 100;
+    player.lives = 3;
+    livesEl.innerText = player.lives;
+    hpBar.style.width = '100%';
+    hpText.innerText = '100%';
+    
+    gameOver = false;
+    gameWon = false;
+    gameStarted = true;
+
+    startScreen.style.display = 'none';
+    spawnWave(currentWave);
+}
 
 function spawnWave(wave) {
     enemies = [];
     enemyBullets = [];
 
     if (wave === 1) {
-        // Onda 1: Formação simples
         for (let r = 0; r < 2; r++) {
-            for (let c = 0; c < 5; c++) {
-                createEnemy('chaser', 60 + c * 60, 50 + r * 40);
-            }
+            for (let c = 0; c < 5; c++) createEnemy('chaser', 60 + c * 60, 50 + r * 40);
         }
     } else if (wave === 2) {
-        // Onda 2: Atiradores
         for (let c = 0; c < 6; c++) createEnemy('shooter', 40 + c * 60, 60);
         for (let c = 0; c < 4; c++) createEnemy('chaser', 70 + c * 70, 110);
     } else if (wave === 3) {
-        // Onda 3: Divisores
         for (let c = 0; c < 4; c++) createEnemy('splitter', 50 + c * 80, 70);
         for (let c = 0; c < 4; c++) createEnemy('chaser', 50 + c * 80, 130);
     } else if (wave === 4) {
-        // Onda 4: Mistura Pesada
         for (let c = 0; c < 5; c++) createEnemy('shooter', 40 + c * 70, 50);
         for (let c = 0; c < 4; c++) createEnemy('splitter', 60 + c * 70, 100);
     } else if (wave === 5) {
-        // Onda 5: BOSS
         createEnemy('boss', canvas.width / 2 - 40, 60);
     }
 }
@@ -85,49 +98,31 @@ function createEnemy(type, x, y) {
         shootTimer: Math.random() * 60
     };
 
-    if (type === 'chaser') {
-        e.color = '#00ff66';
-        e.hp = 20;
-    } else if (type === 'shooter') {
-        e.color = '#ff00ff';
-        e.hp = 30;
-    } else if (type === 'splitter') {
-        e.color = '#ffaa00';
-        e.hp = 40;
-        e.width = 34;
-    } else if (type === 'mini-splitter') {
-        e.color = '#ffff00';
-        e.hp = 15;
-        e.width = 18;
-        e.height = 18;
-    } else if (type === 'boss') {
-        e.color = '#ff0055';
-        e.hp = 400;
-        e.maxHp = 400;
-        e.width = 80;
-        e.height = 60;
-        e.speedX = 2;
-    }
+    if (type === 'chaser') { e.color = '#00ff66'; e.hp = 20; }
+    else if (type === 'shooter') { e.color = '#ff00ff'; e.hp = 30; }
+    else if (type === 'splitter') { e.color = '#ffaa00'; e.hp = 40; e.width = 34; }
+    else if (type === 'mini-splitter') { e.color = '#ffff00'; e.hp = 15; e.width = 18; e.height = 18; }
+    else if (type === 'boss') { e.color = '#ff0055'; e.hp = 400; e.maxHp = 400; e.width = 80; e.height = 60; e.speedX = 2; }
 
     enemies.push(e);
 }
 
 function update() {
-    if (gameOver || gameWon) return;
-
-    // Atualizar Estrelas
+    // Atualizar estrelas de fundo sempre
     stars.forEach(s => {
         s.y += s.speed;
         if (s.y > canvas.height) s.y = 0;
     });
 
-    // Movimentação do Jogador em 360°
+    if (!gameStarted || gameOver || gameWon) return;
+
+    // Movimentação
     if ((keys['w'] || keys['arrowup']) && player.y > 0) player.y -= player.speed;
     if ((keys['s'] || keys['arrowdown']) && player.y < canvas.height - player.height) player.y += player.speed;
     if ((keys['a'] || keys['arrowleft']) && player.x > 0) player.x -= player.speed;
     if ((keys['d'] || keys['arrowright']) && player.x < canvas.width - player.width) player.x += player.speed;
 
-    // Disparo Duplo
+    // Disparo
     const now = Date.now();
     if ((keys[' '] || mouseShooting) && now - lastShot > 140) {
         playerBullets.push({ x: player.x + 4, y: player.y, speed: 9 });
@@ -142,17 +137,13 @@ function update() {
         if (b.y < -10) playerBullets.splice(i, 1);
     }
 
-    // Tiros dos Inimigos
+    // Tiros Inimigos
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
         let eb = enemyBullets[i];
         eb.y += eb.speedY;
         eb.x += eb.speedX || 0;
 
-        // Dano no Jogador
-        if (
-            eb.x > player.x && eb.x < player.x + player.width &&
-            eb.y > player.y && eb.y < player.y + player.height
-        ) {
+        if (eb.x > player.x && eb.x < player.x + player.width && eb.y > player.y && eb.y < player.y + player.height) {
             takeDamage(15);
             enemyBullets.splice(i, 1);
             continue;
@@ -161,35 +152,27 @@ function update() {
         if (eb.y > canvas.height + 10) enemyBullets.splice(i, 1);
     }
 
-    // Atualizar Inimigos
+    // Inimigos
     for (let i = enemies.length - 1; i >= 0; i--) {
         let e = enemies[i];
-
-        // Movimento lateral
         e.x += e.speedX;
         if (e.x <= 10 || e.x + e.width >= canvas.width - 10) e.speedX *= -1;
         e.y += e.speedY;
 
-        // Disparos dos Inimigos
         e.shootTimer++;
         if (e.type === 'shooter' && e.shootTimer > 90) {
             enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, speedY: 4 });
             e.shootTimer = 0;
         } else if (e.type === 'boss' && e.shootTimer > 45) {
-            // Rajada Tripla do Boss
             enemyBullets.push({ x: e.x + 15, y: e.y + e.height, speedY: 4, speedX: -1 });
             enemyBullets.push({ x: e.x + e.width / 2, y: e.y + e.height, speedY: 5, speedX: 0 });
             enemyBullets.push({ x: e.x + e.width - 15, y: e.y + e.height, speedY: 4, speedX: 1 });
             e.shootTimer = 0;
         }
 
-        // Colisão Tiro Jogador x Inimigo
         for (let j = playerBullets.length - 1; j >= 0; j--) {
             let b = playerBullets[j];
-            if (
-                b.x > e.x && b.x < e.x + e.width &&
-                b.y > e.y && b.y < e.y + e.height
-            ) {
+            if (b.x > e.x && b.x < e.x + e.width && b.y > e.y && b.y < e.y + e.height) {
                 e.hp -= 10;
                 playerBullets.splice(j, 1);
 
@@ -207,7 +190,6 @@ function update() {
         }
     }
 
-    // Gerenciador de Ondas
     if (enemies.length === 0) {
         if (currentWave < 5) {
             currentWave++;
@@ -224,11 +206,8 @@ function takeDamage(amount) {
     if (player.hp <= 0) {
         player.lives--;
         livesEl.innerText = player.lives;
-        if (player.lives > 0) {
-            player.hp = 100;
-        } else {
-            gameOver = true;
-        }
+        if (player.lives > 0) player.hp = 100;
+        else gameOver = true;
     }
     hpBar.style.width = Math.max(0, player.hp) + '%';
     hpText.innerText = Math.max(0, player.hp) + '%';
@@ -237,22 +216,20 @@ function takeDamage(amount) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar Estrelas
+    // Estrelas
     ctx.fillStyle = '#ffffff';
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.size, s.size));
 
-    // Desenhar Jogador (Nave Vermelha + Escudo Azul)
-    const px = player.x;
-    const py = player.y;
+    if (!gameStarted) return;
 
-    // Escudo Circular
+    // Jogador (Nave)
+    const px = player.x, py = player.y;
     ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(px + player.width / 2, py + player.height / 2, 24, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Nave Vermelha
     ctx.fillStyle = '#ff2233';
     ctx.beginPath();
     ctx.moveTo(px + player.width / 2, py);
@@ -262,11 +239,11 @@ function draw() {
     ctx.closePath();
     ctx.fill();
 
-    // Tiros do Jogador (Amarelo/Rosa)
+    // Tiros Jogador
     ctx.fillStyle = '#ffee00';
     playerBullets.forEach(b => ctx.fillRect(b.x, b.y, 4, 10));
 
-    // Tiros dos Inimigos (Esferas Vermelhas)
+    // Tiros Inimigos
     ctx.fillStyle = '#ff0033';
     enemyBullets.forEach(eb => {
         ctx.beginPath();
@@ -277,24 +254,18 @@ function draw() {
     // Inimigos
     enemies.forEach(e => {
         ctx.fillStyle = e.color;
-        
         if (e.type === 'boss') {
-            // Desenhar Boss Pixelado
             ctx.fillRect(e.x, e.y, e.width, e.height);
-            // Barra de vida do Boss
             ctx.fillStyle = '#333';
             ctx.fillRect(e.x, e.y - 12, e.width, 6);
             ctx.fillStyle = '#ff0055';
             ctx.fillRect(e.x, e.y - 12, (e.hp / e.maxHp) * e.width, 6);
         } else {
-            // Alienígenas no estilo invader
             ctx.fillRect(e.x, e.y, e.width, e.height);
-            ctx.fillRect(e.x + 4, e.y + e.height, 6, 4);
-            ctx.fillRect(e.x + e.width - 10, e.y + e.height, 6, 4);
         }
     });
 
-    // Telas Finais
+    // Mensagens Finais
     if (gameOver) {
         ctx.fillStyle = '#ff0055';
         ctx.font = 'bold 22px Courier New';
@@ -314,5 +285,4 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-spawnWave(currentWave);
 loop();
