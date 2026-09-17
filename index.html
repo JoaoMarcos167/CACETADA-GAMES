@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter Arcade</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="ui-bar">
+            <div class="hp-box">
+                <div id="hp-bar"></div>
+                <span id="hp-text">100%</span>
+            </div>
+            <span>ONDA: <span id="wave">1</span>/5</span>
+            <span>SCORE: <span id="score">0</span></span>
+            <span>❤️ <span id="lives">3</span></span>
+        </div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <p class="controls">Controles: [WASD / Setas] Mover | [Espaço] ou [Mouse] Atirar</p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
